@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <title>Image Thread Mini Project</title>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+</head>
+<body>
+
+<div class="container-fluid">
+  <div class="content">
+      <div class="row">
+        <div class="col-xs-3 col-sm-3 text-center">Posts: <span id="num-posts">#Post</span></div>
+        <div class="col-xs-6 col-sm-6 text-center"><button onclick="location.href='/export'">Export Button</button></div>
+        <div class="col-xs-3 col-sm-3 text-center">Views: <span id="num-views">#View</span></div>
+      </div>
+      <form class="form-inline text-center" method="POST" id="main-form">
+        <input type="text" class="form-control" id="title" name="title" placeholder="Title">
+        <input type="file" class="form-control" id="image" name="image" placeholder="Select an image">
+        <button type="button" class="btn btn-primary" id="upload">Upload</button>
+      </form>
+  </div>
+</div>
+
+<div class="container-fluid">
+    <div class="content" id="main-content">
+    </div>
+    <script>
+        // TODO: Use framework, Vue, React, or Angular
+        var dom = document.getElementById("main-content");
+        $.ajax({
+            url: '/api/posts/', 
+            success: function(posts){
+                var html = '';
+                for (var i = 0; i < posts.length; i++){
+                    var post = posts[i];
+                    var url = '/images/' + post.ImageID;
+                    html += '<div class="row thumbnail">';
+                    html += '<p class="text-center">' + post.Title + '</p>';
+                    html += '<div><a href="' + url + '"><img src="' + url + '" class="img-responsive"></a></div>';
+                    html += '</div>';
+                }
+                dom.innerHTML = html;
+            },
+            // TODO: Handle error
+        });
+
+        var updateInfo = function(){
+            var views = document.getElementById("num-views");
+            var posts = document.getElementById("num-posts");
+            return function(){
+                $.ajax({
+                    url: '/api/info', 
+                    success: function(data){
+                        views.innerHTML = data.Views;
+                        posts.innerHTML = data.Posts;
+                    },
+                    // TODO: Handle error
+                });
+            }
+        };
+
+        {
+            var u = updateInfo();
+            u();
+            setInterval(u, 15*1000);
+        }
+
+        // TODO: Better inform method, for UX
+        $('#upload').click(function(){
+            var file = $('#image').val();
+            if (file.length <= 0){
+                alert('No file');
+                return;
+            }
+
+             $.ajax({
+                url: '/api/posts/',
+                type: 'POST',
+                data: new FormData($('#main-form')[0]),
+                cache: false,
+                processData: false, 
+                contentType: false,
+                success: function(data)
+                {
+                    // TODO: Seamless refresh, using client rendering 
+                    location.reload();
+                },
+                error: function(jqXHR, textStatus, errorThrown)
+                {
+                    // TODO: Handle error
+                    alert('Oops, something wrong. ' + errorThrown);
+                },
+            });
+        })
+    </script>
+</div>
+
+</body>
+</html>
