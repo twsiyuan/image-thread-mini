@@ -14,6 +14,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"strconv"
+	"strings"
 
 	"github.com/gorilla/mux"
 	"github.com/unrolled/render"
@@ -22,6 +23,10 @@ import (
 var (
 	ren = render.New()
 )
+
+type responseError struct {
+	Error string
+}
 
 func recoveryHandler(outputErr bool, next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
@@ -37,11 +42,7 @@ func recoveryHandler(outputErr bool, next http.Handler) http.Handler {
 				log.SetOutput(os.Stderr)
 				log.Printf("Unexpected error: %v, in %s\n", err, stack)
 
-				ren.JSON(w, http.StatusInternalServerError, struct {
-					Error string
-				}{
-					displayErr,
-				})
+				ren.JSON(w, http.StatusInternalServerError, responseError{displayErr})
 			}
 		}()
 
@@ -168,7 +169,7 @@ func uploadHandler(db *sql.DB) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		if req.ContentLength >= (2<<25) || req.ContentLength == 0 {
 			// TODO: Forbidden
-			w.WriteHeader(http.StatusForbidden)
+			ren.JSON(w, http.StatusForbidden, responseError{"Invalid file size, up to 20mb"})
 			return
 		}
 
@@ -183,17 +184,16 @@ func uploadHandler(db *sql.DB) http.Handler {
 		}
 		defer file.Close()
 
-		if header.Size >= 200000000 {
+		if header.Size >= 20000000 {
 			// TODO: Forbidden and more message
-			w.WriteHeader(http.StatusForbidden)
+			ren.JSON(w, http.StatusForbidden, responseError{"Invalid file size, up to 20mb"})
 			return
 		}
 
 		fileName := header.Filename
-		ext := filepath.Ext(fileName)
+		ext := strings.ToLower(filepath.Ext(fileName))
 		if ext != ".jpg" && ext != ".jpeg" && ext != ".png" {
-			// TODO: Forbidden and more message
-			w.WriteHeader(http.StatusForbidden)
+			ren.JSON(w, http.StatusForbidden, responseError{"Invalid file type. Only support JPG or PNG."})
 			return
 		}
 
@@ -204,11 +204,10 @@ func uploadHandler(db *sql.DB) http.Handler {
 
 		width, height, err := imageDimansion(raws, ext)
 		if err != nil {
-			// TODO: Forbidden and unsupport file
-			w.WriteHeader(http.StatusForbidden)
+			ren.JSON(w, http.StatusForbidden, responseError{"Invalid file type. Only support JPG or PNG."})
 			return
 		} else if width > 1920 || height > 1080 {
-			w.WriteHeader(http.StatusForbidden)
+			ren.JSON(w, http.StatusForbidden, responseError{"Invalid image size. upto 1920 x 1080."})
 			return
 		}
 

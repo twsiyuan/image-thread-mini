@@ -89,10 +89,11 @@
                     // TODO: Seamless refresh, using client rendering 
                     location.reload();
                 },
-                error: function(jqXHR, textStatus, errorThrown)
+                error: function(xhr, textStatus, errorThrown)
                 {
                     // TODO: Handle error
-                    alert('Oops, something wrong. ' + errorThrown);
+                    var json = JSON.parse(xhr.responseText);
+                    alert('Oops, something wrong. ' + errorThrown + ':' + json.Error);
                 },
             });
         })
