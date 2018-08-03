@@ -33,6 +33,7 @@
         var dom = document.getElementById("main-content");
         $.ajax({
             url: '/api/posts/', 
+            cache: false,
             success: function(posts){
                 var html = '';
                 for (var i = 0; i < posts.length; i++){
@@ -54,6 +55,7 @@
             return function(){
                 $.ajax({
                     url: '/api/info', 
+                    cache: false,
                     success: function(data){
                         views.innerHTML = data.Views;
                         posts.innerHTML = data.Posts;
